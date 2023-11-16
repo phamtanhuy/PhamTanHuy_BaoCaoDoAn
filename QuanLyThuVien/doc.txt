@@ -1,0 +1,205 @@
+﻿Tôi đang gặp lỗi violation of primary key contriants PK_QLNhanVien
+
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+
+namespace QuanLyThuVien.frm
+{
+    public partial class frmNhanVien : Form
+    {
+        public frmNhanVien()
+        {
+            InitializeComponent();
+        }
+        SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-OUVKE5K;Initial Catalog=QLThuVien;Integrated Security=True");
+
+        private void RefreshDataGridView()
+        {
+            SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-OUVKE5K;Initial Catalog=QLThuVien;Integrated Security=True");
+            {
+                conn.Open();
+
+                // Thực hiện truy vấn SQL để lấy dữ liệu từ cơ sở dữ liệu
+                string query = "SELECT * FROM QLNhanVien";
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    using (SqlDataAdapter adapter = new SqlDataAdapter(cmd))
+                    {
+                        DataTable dataTable = new DataTable();
+                        adapter.Fill(dataTable);
+
+                        // Cập nhật bảng dgvQLS bằng dữ liệu mới
+                        dgvNhanVien.DataSource = dataTable;
+                    }
+                }
+            }
+        }
+        private void dataQLNhanVien()
+        {
+            conn.Open();
+            string sql = "SELECT * FROM QLNhanVien";
+            SqlCommand com = new SqlCommand(sql, conn);
+            com.CommandType = CommandType.Text;
+            SqlDataAdapter da = new SqlDataAdapter(com);
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+            conn.Close();
+            dgvNhanVien.DataSource = dt;
+        }
+        private void frmNhanVien_Load(object sender, EventArgs e)
+        {
+            dataQLNhanVien();
+        }
+        private bool IsMaNhanVienExists(string maNhanVien)
+        {
+            using (SqlConnection connection = new SqlConnection(@"Data Source=DESKTOP-OUVKE5K;Initial Catalog=QLThuVien;Integrated Security=True"))
+            {
+                connection.Open();
+                string query = "SELECT COUNT(*) FROM QLNhanVien WHERE MaNhanVien = @MaNhanVien";
+                using (SqlCommand cmd = new SqlCommand(query, connection))
+                {
+                    cmd.Parameters.AddWithValue("@MaNhanVien", maNhanVien);
+                    int count = (int)cmd.ExecuteScalar();
+                    return count > 0;
+                }
+            }
+        }
+        private void btnThem_Click(object sender, EventArgs e)
+        {
+            string maNhanVien = txtMaNhanVien.Text;
+            if (IsMaNhanVienExists(maNhanVien))
+            {
+                MessageBox.Show("Mã nhân viên đã tồn tại. Vui lòng chọn mã sách khác.");
+                return;
+            }
+            string tenDangNhap = txtTenDangNhap.Text;
+            string matKhau = txtMatKhau.Text;
+            int soDienThoai = Convert.ToInt32(txtSoDienThoai.Text);
+            string email = txtEmail.Text;
+            string diaChi = txtDiaChi.Text;
+            string capBac = cbCapBac.Text;
+
+            string query = "INSERT INTO QLNhanVien (MaNhanVien, HoTenNhanVien, TenDangNhap, MatKhau, SoDienThoai, Email, DiaChi, CapBac) " +
+                           "VALUES (@MaNhanVien, @HoTenNhanVien, @TenDangNhap, @MatKhau, @SoDienThoai, @Email, @DiaChi, @CapBac)";
+
+            SqlConnection conn = new SqlConnection(@"Data Source=DESKTOP-OUVKE5K;Initial Catalog=QLThuVien;Integrated Security=True");
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@MaNhanVien", maNhanVien);
+                cmd.Parameters.AddWithValue("@HoTenNhanVien", maNhanVien);
+                cmd.Parameters.AddWithValue("@TenDangNhap", tenDangNhap);
+                cmd.Parameters.AddWithValue("@MatKhau", matKhau);
+                cmd.Parameters.AddWithValue("@SoDienThoai", soDienThoai);
+                cmd.Parameters.AddWithValue("@Email", email);
+                cmd.Parameters.AddWithValue("@DiaChi", diaChi);
+                cmd.Parameters.AddWithValue("@CapBac", capBac);
+
+                try
+                {
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    MessageBox.Show("Dữ liệu đã được thêm vào cơ sở dữ liệu.");
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Lỗi khi thêm dữ liệu: " + ex.Message);
+                }
+            }
+            RefreshDataGridView();
+        }
+
+        private bool isEditing = false;
+        private int editedRowIndex = -1;
+
+        private void btnSua_Click(object sender, EventArgs e)
+        {
+            if (!isEditing)
+            {
+                if (dgvNhanVien.SelectedRows.Count > 0)
+                {
+                    DataGridViewRow selectedRow = dgvNhanVien.SelectedRows[0];
+                    txtMaNhanVien.Text = selectedRow.Cells["MaNhanVien"].Value.ToString();
+                    txtHoTenNhanVien.Text = selectedRow.Cells["HoTenNhanVien"].Value.ToString();
+                    txtTenDangNhap.Text = selectedRow.Cells["TenDangNhap"].Value.ToString();
+                    txtMatKhau.Text = selectedRow.Cells["MatKhau"].Value.ToString();
+                    txtSoDienThoai.Text = selectedRow.Cells["SoDienThoai"].Value.ToString();
+                    txtEmail.Text = selectedRow.Cells["Email"].Value.ToString();
+                    txtDiaChi.Text = selectedRow.Cells["DiaChi"].Value.ToString();
+                    cbCapBac.Text = selectedRow.Cells["CapBac"].Value.ToString();
+                    isEditing = true;
+                    editedRowIndex = selectedRow.Index;
+                    btnThem.Enabled = false;
+                    btnSua.Text = "Lưu";
+                }
+            }
+            else
+            {
+                string maNhanVien = txtMaNhanVien.Text;
+                if (IsMaNhanVienExists(maNhanVien))
+                {
+                    MessageBox.Show("Mã nhân viên đã tồn tại. Vui lòng chọn mã sách khác.");
+                    return;
+                }
+                string hoTenNhanVien = txtHoTenNhanVien.Text;
+                string tenDangNhap = txtTenDangNhap.Text;
+                string matKhau = txtMatKhau.Text;
+                int soDienThoai = Convert.ToInt32(txtSoDienThoai.Text);
+                string email = txtEmail.Text;
+                string diaChi = txtDiaChi.Text;
+                string capBac = cbCapBac.Text;
+
+                string connString = @"Data Source=DESKTOP-OUVKE5K;Initial Catalog=QLThuVien;Integrated Security=True";
+
+                using (SqlConnection connection = new SqlConnection(connString))
+                {
+                    try
+                    {
+                        connection.Open();
+                        string query = "UPDATE QLNhanVien SET MaNhanVien = @MaNhanVien, HoTenNhanVien = @HoTenNhanVien, TenDangNhap = @TenDangNhap, MatKhau = @MatKhau, SoDienThoai = @SoDienThoai, Email = @Email, DiaChi = @DiaChi, CapBac = @CapBac";
+
+                        using (SqlCommand command = new SqlCommand(query, connection))
+                        {
+                            command.Parameters.Add("@MaNhanVien", SqlDbType.VarChar).Value = maNhanVien;
+                            command.Parameters.Add("@HoTenNhanVien", SqlDbType.NVarChar).Value = hoTenNhanVien;
+                            command.Parameters.Add("@TenDangNhap", SqlDbType.NVarChar).Value = tenDangNhap;
+                            command.Parameters.Add("@MatKhau", SqlDbType.NVarChar).Value = matKhau;
+                            command.Parameters.Add("@SoDienThoai", SqlDbType.VarChar).Value = soDienThoai;
+                            command.Parameters.Add("@Email", SqlDbType.NVarChar).Value = email;
+                            command.Parameters.Add("@DiaChi", SqlDbType.NVarChar).Value = diaChi;
+                            command.Parameters.Add("@CapBac", SqlDbType.NVarChar).Value = capBac;
+                            command.Parameters.Add("@OldMaNhanVien", SqlDbType.VarChar).Value = dgvNhanVien.Rows[editedRowIndex].Cells["MaNhanVien"].Value.ToString();
+                            command.ExecuteNonQuery();
+
+                            MessageBox.Show("Dữ liệu đã được cập nhật.");
+                        }
+                        dataQLNhanVien();
+                        txtMaNhanVien.Clear();
+                        txtHoTenNhanVien.Clear();
+                        txtTenDangNhap.Clear();
+                        txtMatKhau.Clear();
+                        txtSoDienThoai.Clear();
+                        txtEmail.Clear();
+                        txtDiaChi.Clear();
+
+                        isEditing = false;
+                        btnThem.Enabled = true;
+                        btnSua.Text = "Sửa";
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Lỗi khi cập nhật dữ liệu: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+    }
+}
